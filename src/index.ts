@@ -1,15 +1,39 @@
 import { connectToMongoDB } from "./baseDatos";
-import express from "express"
-import rutillas from "./routes"
-import dotenv from "dotenv"
+import express, { Request, Response, NextFunction } from "express";
+import rutasAuth from "./routes/auth";
+import rutasProducts from "./routes/products";
+import rutasCart from "./routes/carts";
+import dotenv from "dotenv";
 
-dotenv.config()
-
+dotenv.config();
 
 connectToMongoDB();
+
 const app = express();
+
 app.use(express.json());
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+        return res.status(400).json({ message: "Invalid JSON body" });
+    }
+    next();
+});
 
-app.use("/api/Clase1", rutillas)
+// Rutas principales de la API
+app.use("/api/auth", rutasAuth);
+app.use("/api/products", rutasProducts);
+app.use("/api/cart", rutasCart);
 
-app.listen(3000, ()=>console.log("El API comenzó en el puerto 3000"));
+app.use((req, res) => {
+    res.status(404).json({ message: "Not found" });
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+
+    console.error("Error!:", err);
+    
+    res.status(500).json({ message: "Error interno" });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, ()=>console.log(`El API comenzó en el puerto: ${PORT}`));
